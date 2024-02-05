@@ -1,7 +1,7 @@
 import pandas as pd
 import streamlit as st
 from datetime import datetime, timedelta, date
-from sqlalchemy.sql import text, insert
+from sqlalchemy.sql import text
 
 
 
@@ -13,11 +13,7 @@ from sqlalchemy.sql import text, insert
 
 def init_db(conn):
     with conn.session as s:
-        s.execute(text("CREATE TABLE IF NOT EXISTS bookings (datum DATE, platz INTEGER, name TEXT)"))
-        s.execute(
-            insert(bookings),
-        
-            [
+        data = [
                 {"datum":"2024-01-24","platz":5,"name":"SK"},
                 {"datum":"2024-01-24","platz":4,"name":"MH"},
                 {"datum":"2024-02-02","platz":1,"name":"AW"},
@@ -25,7 +21,10 @@ def init_db(conn):
                 {"datum":"2024-02-02","platz":2,"name":"BR"},
                 {"datum":"2024-02-06","platz":7,"name":"IWS"},
                 {"datum":"2024-02-07","platz":4,"name":"JR"}
-            ],
+            ]
+        s.execute(text("CREATE TABLE IF NOT EXISTS bookings (datum DATE, platz INTEGER, name TEXT)"))
+        s.execute(
+            text("INSERT INTO bookings (datum, platz, name) VALUES (:datum, :platz, :name)"), data
         )
         s.commit()
 
@@ -42,6 +41,10 @@ def build_woche(df: pd.DataFrame, selected_dates: tuple) -> pd.DataFrame:
     datenfilter = df.between(selected_dates[0], selected_dates[1])
     return aktuelle_woche.combine_first(df.loc[datenfilter])
 
+def read_selection(conn, selected_dates):
+    auswahl = conn.query(f'select * from bookings where datum BETWEEN {selected_dates[0].strftime("%Y-%m-%d")} AND {selected_dates[1].strftime("%Y-%m-%d")}')
+    return auswahl
+
 def get_current_week_dates():
     today = date.today()
     monday = today - timedelta(days=today.weekday())
@@ -50,20 +53,21 @@ def get_current_week_dates():
 
 def main():
     conn = st.connection('bookings_db', type='sql')
-    init_db(conn)
-    buchungen = conn.query('select * from bookings')
-    st.dataframe(buchungen)
+    # init_db(conn)
+    # buchungen = conn.query('select * from bookings')
+    # st.dataframe(buchungen)
     #gesamt = daten_laden()
 
     # Get the current week's Monday and Friday
-    # monday, friday = get_current_week_dates()
+    monday, friday = get_current_week_dates()
+    
     # Create the datepicker with the preset dates
-    # selected_dates = st.date_input(
-    #     "Wählen Sie ein Datum",
-    #     value=(monday, friday),
-    #     format="DD.MM.YYYY"  # German date format
-    # )
-
+    selected_dates = st.date_input(
+        "Wählen Sie ein Datum",
+        value=(monday, friday),
+        format="DD.MM.YYYY"  # German date format
+    )
+    read_selection(conn, selected_dates)
     # st.data_editor(build_woche(gesamt, selected_dates))
 
 if __name__ == "__main__":
