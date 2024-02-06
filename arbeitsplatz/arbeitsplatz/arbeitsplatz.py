@@ -67,6 +67,7 @@ def main():
         value=(monday, friday),
         format="DD.MM.YYYY"  # German date format
     )
+    selected_dates
     read_selection(conn, selected_dates)
     # st.data_editor(build_woche(gesamt, selected_dates))
 
