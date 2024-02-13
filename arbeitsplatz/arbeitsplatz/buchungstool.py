@@ -30,12 +30,11 @@ def speichere_buchungen(df):
     # st.header("diff_df")
     # diff_df
 
+    c.execute('DELETE FROM buchungen WHERE datum BETWEEN ? AND ?', (df.index.min().strftime('%Y-%m-%d'), df.index.max().strftime('%Y-%m-%d')))
     for datum, row in df.iterrows():
         for platz, name in enumerate(row, start=1):
             if pd.notnull(name):
-                # c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date(), platz, name))
-                # c.execute('UPDATE buchungen SET name = ? WHERE datum = ? AND platz = ?', (name, datum.date(), platz))
-                c.execute('INSERT OR REPLACE INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date(), platz, name))
+                c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date(), platz, name))
     conn.commit()
 
 # Beispieldaten hinzufügen, wenn die Tabelle leer ist
@@ -62,7 +61,7 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
 
 def on_data_editor_change():
     geaendertes_df = st.session_state['data_editor']
-    speichere_buchungen(geaendertes_df)
+    # speichere_buchungen(geaendertes_df)
     st.session_state['mein_dataframe'] = geaendertes_df
 
 def main():
@@ -80,15 +79,19 @@ def main():
 
     wochen_df = wochenansicht(buchungen_df, start_datum, ende_datum)
 
-    if "mein_dataframe" not in st.session_state:
-        st.session_state.mein_dataframe = wochen_df
+    # if "mein_dataframe" not in st.session_state:
+    #     st.session_state.mein_dataframe = wochen_df
 
     # Dataframe anzeigen und bearbeiten lassen
     "Bearbeitung"
-    st.session_state['data_editor'] = st.data_editor(
-        data=st.session_state['mein_dataframe'],
-        on_change=on_data_editor_change
+    data_editor = st.data_editor(
+        wochen_df
     )
+
+    # Änderungen speichern
+    if st.button('Änderungen speichern'):
+        speichere_buchungen(data_editor)
+        st.success('Buchungen erfolgreich gespeichert!')
 
 if __name__ == "__main__":
     # Datenbankverbindung herstellen
