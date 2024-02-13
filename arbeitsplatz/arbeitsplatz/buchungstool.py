@@ -34,7 +34,7 @@ def speichere_buchungen(df):
     for datum, row in df.iterrows():
         for platz, name in enumerate(row, start=1):
             if pd.notnull(name):
-                c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date(), platz, name))
+                c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date().strftime('%Y-%m-%d'), platz, name))
     conn.commit()
 
 # Beispieldaten hinzufügen, wenn die Tabelle leer ist
@@ -59,11 +59,6 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     df.columns.names = ['platz']
     return aktuelle_woche.combine_first(df)
 
-def on_data_editor_change():
-    geaendertes_df = st.session_state['data_editor']
-    # speichere_buchungen(geaendertes_df)
-    st.session_state['mein_dataframe'] = geaendertes_df
-
 def main():
     # Streamlit App
     # fuege_beispieldaten_hinzu()
@@ -71,21 +66,24 @@ def main():
     st.title('Arbeitsplatz-Buchungstool')
 
     # Kalenderwidget zur Auswahl des Zeitraums
-    start_datum = st.date_input('Startdatum', datetime.today())
-    ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7))
+    start_datum = st.date_input('Startdatum', datetime.today(), format="DD.MM.YYYY")
+    ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7), format="DD.MM.YYYY")
 
     # Buchungen für den gewählten Zeitraum laden
     buchungen_df = lade_buchungen(start_datum, ende_datum)
 
     wochen_df = wochenansicht(buchungen_df, start_datum, ende_datum)
 
-    # if "mein_dataframe" not in st.session_state:
-    #     st.session_state.mein_dataframe = wochen_df
-
+   
     # Dataframe anzeigen und bearbeiten lassen
     "Bearbeitung"
     data_editor = st.data_editor(
-        wochen_df
+        wochen_df, column_config={
+        "datum": st.column_config.DateColumn(
+            "Datum",
+            format="DD.MM.YYYY",
+        ),
+    }
     )
 
     # Änderungen speichern
@@ -109,4 +107,4 @@ if __name__ == "__main__":
     conn.commit()
     main()
     # Datenbankverbindung schließen
-    # conn.close()
+    conn.close()
