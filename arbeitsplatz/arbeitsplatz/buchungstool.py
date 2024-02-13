@@ -3,20 +3,6 @@ import pandas as pd
 import sqlite3
 from datetime import datetime, timedelta
 
-# Datenbankverbindung herstellen
-conn = sqlite3.connect('buchungen.db')
-c = conn.cursor()
-
-# Tabelle erstellen, falls sie noch nicht existiert
-c.execute('''
-    CREATE TABLE IF NOT EXISTS buchungen (
-        datum DATE,
-        platz INTEGER,
-        name TEXT
-    )
-''')
-conn.commit()
-
 # Hilfsfunktion zum Laden der Buchungen aus der Datenbank
 def lade_buchungen(start, ende):
     c.execute('SELECT * FROM buchungen WHERE datum BETWEEN ? AND ?', (start, ende))
@@ -26,12 +12,30 @@ def lade_buchungen(start, ende):
 
 # Hilfsfunktion zum Speichern der Buchungen in der Datenbank
 def speichere_buchungen(df):
-    f"index min: {df.index.min()}, max: {df.index.max()}"
-    c.execute('DELETE FROM buchungen WHERE datum BETWEEN ? AND ?', (df.index.min(), df.index.max()))
+    
+    # st.header("Spalten")
+    # df.columns
+    # st.session_state['mein_dataframe'].columns
+
+    # st.header("Index")
+    # df.index
+    # st.session_state['mein_dataframe'].index
+    # st.write("ENDE")
+
+    # Unterschiede finden
+    # diff_mask = st.session_state.mein_dataframe != df
+
+    # # Nur unterschiedliche Werte behalten
+    # diff_df = st.session_state.mein_dataframe.where(diff_mask, other=None)
+    # st.header("diff_df")
+    # diff_df
+
     for datum, row in df.iterrows():
         for platz, name in enumerate(row, start=1):
             if pd.notnull(name):
-                c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date(), platz, name))
+                # c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date(), platz, name))
+                # c.execute('UPDATE buchungen SET name = ? WHERE datum = ? AND platz = ?', (name, datum.date(), platz))
+                c.execute('INSERT OR REPLACE INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date(), platz, name))
     conn.commit()
 
 # Beispieldaten hinzufügen, wenn die Tabelle leer ist
@@ -39,33 +43,67 @@ def fuege_beispieldaten_hinzu():
     heute = datetime.today().date()
     c.execute('SELECT * FROM buchungen WHERE datum = ?', (heute,))
     if not c.fetchall():
-        c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (heute, 1, 'testuse'))
+        c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (heute, '1', 'testuse'))
         conn.commit()
 
-fuege_beispieldaten_hinzu()
+def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
+    # Erstellen des Datumsindex
+    date_index = pd.date_range(start, ende)
+    # Erstellen des leeren Wochen-DataFrames
+    aktuelle_woche = pd.DataFrame(columns=[str(i) for i in range(1, 9)], index=date_index)
+    aktuelle_woche.index.names = ['datum']
+    aktuelle_woche.columns.names = ['platz']
+    # die eingelesenen schon gespeicherten buchungen werden mit dem leeren wochen-df kombiniert
+    # df = df.reset_index()
+    # datenfilter = df.between(start, ende)
+    df = df.pivot(index='datum', columns='platz', values='name')
+    df.columns.names = ['platz']
+    return aktuelle_woche.combine_first(df)
 
-# Streamlit App
-st.title('Arbeitsplatz-Buchungstool')
+def on_data_editor_change():
+    geaendertes_df = st.session_state['data_editor']
+    speichere_buchungen(geaendertes_df)
+    st.session_state['mein_dataframe'] = geaendertes_df
 
-# Kalenderwidget zur Auswahl des Zeitraums
-start_datum = st.date_input('Startdatum', datetime.today())
-ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7))
+def main():
+    # Streamlit App
+    # fuege_beispieldaten_hinzu()
 
-# Buchungen für den gewählten Zeitraum laden
-buchungen_df = lade_buchungen(start_datum, ende_datum)
+    st.title('Arbeitsplatz-Buchungstool')
 
-# Dataframe für die Anzeige vorbereiten
-alle_datums = pd.date_range(start_datum, ende_datum, freq='D')
-buchungen_df = buchungen_df.pivot(index='datum', columns='platz', values='name')
-buchungen_df = buchungen_df.reindex(alle_datums, fill_value='')
+    # Kalenderwidget zur Auswahl des Zeitraums
+    start_datum = st.date_input('Startdatum', datetime.today())
+    ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7))
 
-# Dataframe anzeigen und bearbeiten lassen
-st.data_editor(buchungen_df)
+    # Buchungen für den gewählten Zeitraum laden
+    buchungen_df = lade_buchungen(start_datum, ende_datum)
 
-# Änderungen speichern
-if st.button('Änderungen speichern'):
-    speichere_buchungen(buchungen_df)
-    st.success('Buchungen erfolgreich gespeichert!')
+    wochen_df = wochenansicht(buchungen_df, start_datum, ende_datum)
 
-# Datenbankverbindung schließen
-conn.close()
+    if "mein_dataframe" not in st.session_state:
+        st.session_state.mein_dataframe = wochen_df
+
+    # Dataframe anzeigen und bearbeiten lassen
+    "Bearbeitung"
+    st.session_state['data_editor'] = st.data_editor(
+        data=st.session_state['mein_dataframe'],
+        on_change=on_data_editor_change
+    )
+
+if __name__ == "__main__":
+    # Datenbankverbindung herstellen
+    conn = sqlite3.connect('buchungen.db')
+    c = conn.cursor()
+
+    # Tabelle erstellen, falls sie noch nicht existiert
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS buchungen (
+            datum DATE,
+            platz TEXT,
+            name TEXT
+        )
+    ''')
+    conn.commit()
+    main()
+    # Datenbankverbindung schließen
+    # conn.close()
