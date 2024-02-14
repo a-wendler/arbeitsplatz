@@ -57,39 +57,52 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     # datenfilter = df.between(start, ende)
     df = df.pivot(index='datum', columns='platz', values='name')
     df.columns.names = ['platz']
-    return aktuelle_woche.combine_first(df)
+    aktuelle_woche = aktuelle_woche.combine_first(df)
+    aktuelle_woche.fillna('', inplace=True)
+    return aktuelle_woche
 
 def main():
     # Streamlit App
     # fuege_beispieldaten_hinzu()
 
     st.title('Arbeitsplatz-Buchungstool')
-
+    
     # Kalenderwidget zur Auswahl des Zeitraums
-    start_datum = st.date_input('Startdatum', datetime.today(), format="DD.MM.YYYY")
-    ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7), format="DD.MM.YYYY")
+    st.header('1. Datumsbereich wählen')
+    col1, col2 = st.columns(2)
+    with col1:
+        start_datum = st.date_input('Startdatum', datetime.today(), format="DD.MM.YYYY", min_value=datetime.today()-timedelta(days=20), max_value=datetime.today() + timedelta(days=21))
+    with col2:
+        ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7), format="DD.MM.YYYY", min_value=datetime.today()-timedelta(days=20), max_value=datetime.today() + timedelta(days=21))
+    
+    if start_datum > ende_datum:
+        st.error('Das Startdatum darf nicht nach dem Enddatum liegen!')
+    elif start_datum < ende_datum: 
+        # Buchungen für den gewählten Zeitraum laden
+        buchungen_df = lade_buchungen(start_datum, ende_datum)
 
-    # Buchungen für den gewählten Zeitraum laden
-    buchungen_df = lade_buchungen(start_datum, ende_datum)
+        wochen_df = wochenansicht(buchungen_df, start_datum, ende_datum)
 
-    wochen_df = wochenansicht(buchungen_df, start_datum, ende_datum)
+    
+        # Dataframe anzeigen und bearbeiten lassen
+        st.header('2. Buchungen bearbeiten')
+        data_editor = st.data_editor(
+            wochen_df, column_config={
+            "datum": st.column_config.DateColumn(
+                "Datum",
+                format="DD.MM.",
+            ),
+        }
+        )
 
-   
-    # Dataframe anzeigen und bearbeiten lassen
-    "Bearbeitung"
-    data_editor = st.data_editor(
-        wochen_df, column_config={
-        "datum": st.column_config.DateColumn(
-            "Datum",
-            format="DD.MM.YYYY",
-        ),
-    }
-    )
-
+    st.header('3. Änderungen speichern')
     # Änderungen speichern
     if st.button('Änderungen speichern'):
         speichere_buchungen(data_editor)
         st.success('Buchungen erfolgreich gespeichert!')
+    
+    st.header('Arbeitsplatzübersicht')
+    st.image('grundriss.png', use_column_width=True)
 
 if __name__ == "__main__":
     # Datenbankverbindung herstellen
