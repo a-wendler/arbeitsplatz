@@ -2,16 +2,41 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 from datetime import datetime, timedelta
+import hmac
 
-# Hilfsfunktion zum Laden der Buchungen aus der Datenbank
 def lade_buchungen(start, ende):
+    """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
     c.execute('SELECT * FROM buchungen WHERE datum BETWEEN ? AND ?', (start, ende))
     buchungen = pd.DataFrame(c.fetchall(), columns=['datum', 'platz', 'name'])
     buchungen['datum'] = pd.to_datetime(buchungen['datum'])
     return buchungen
 
+def check_password():
+    """Returns `True` if the user had the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password.
+        else:
+            st.session_state["password_correct"] = False
+
+    # Return True if the password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password.
+    st.text_input(
+        "Passwort", type="password", on_change=password_entered, key="password"
+    )
+    if "password_correct" in st.session_state:
+        st.error("😕 Falsches Passwort")
+    return False
+
 # Hilfsfunktion zum Speichern der Buchungen in der Datenbank
 def speichere_buchungen(df):
+    """Speichere Buchungen in der Datenbank."""
     
     # st.header("Spalten")
     # df.columns
@@ -39,6 +64,7 @@ def speichere_buchungen(df):
 
 # Beispieldaten hinzufügen, wenn die Tabelle leer ist
 def fuege_beispieldaten_hinzu():
+    """Füge Beispieldaten hinzu, wenn die Tabelle leer ist."""
     heute = datetime.today().date()
     c.execute('SELECT * FROM buchungen WHERE datum = ?', (heute,))
     if not c.fetchall():
@@ -46,6 +72,7 @@ def fuege_beispieldaten_hinzu():
         conn.commit()
 
 def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
+    """Erstelle ein leeres Wochen-Dataframe und fülle es mit den vorhandenen Buchungen."""
     # Erstellen des Datumsindex
     date_index = pd.date_range(start, ende)
     # Erstellen des leeren Wochen-DataFrames
@@ -64,9 +91,11 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
 def main():
     # Streamlit App
     # fuege_beispieldaten_hinzu()
+    
+    if not check_password():
+        st.stop()  # Do not continue if check_password is not True.
 
     st.title('Arbeitsplatz-Buchungstool')
-    
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
