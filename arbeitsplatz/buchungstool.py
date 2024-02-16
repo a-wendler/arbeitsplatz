@@ -131,7 +131,7 @@ def main():
         st.success('Buchungen erfolgreich gespeichert!')
     
     st.header('Arbeitsplatzübersicht')
-    st.image('grundriss.png', use_column_width=True)
+    st.image('arbeitsplatz/grundriss.png', use_column_width=True)
 
 if __name__ == "__main__":
     # Datenbankverbindung herstellen
