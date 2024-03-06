@@ -94,7 +94,7 @@ def main():
         st.stop()  # Do not continue if check_password is not True.
 
     st.title('Arbeitsplatz-Buchungstool')
-    
+    st.write("verzeichniszusatz: ", verzeichnis_zusatz)
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
