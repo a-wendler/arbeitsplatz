@@ -87,6 +87,7 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     df = df.pivot(index='datum', columns='platz', values='name')
     df.columns.names = ['platz']
     aktuelle_woche = aktuelle_woche.combine_first(df)
+    aktuelle_woche = aktuelle_woche[plaetze]
     aktuelle_woche.fillna('', inplace=True)
     return aktuelle_woche
 
