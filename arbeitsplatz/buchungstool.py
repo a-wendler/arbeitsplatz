@@ -48,9 +48,13 @@ def speichere_buchungen(df):
     
     c.execute('DELETE FROM buchungen WHERE datum BETWEEN ? AND ?', (df.index.min().strftime('%Y-%m-%d'), df.index.max().strftime('%Y-%m-%d')))
     for datum, row in df.iterrows():
-        for platz, name in enumerate(row, start=1):
+        for platz in df.columns:
+            name = row[platz]
+            # Überprüfe, ob der Zelleninhalt nicht leer ist
             if pd.notnull(name):
-                c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (datum.date().strftime('%Y-%m-%d'), platz, name))
+                # Füge den nicht-leeren Eintrag in die Datenbank ein
+                c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', 
+                          (datum.strftime('%Y-%m-%d'), platz, name))
     conn.commit()
 
 # Beispieldaten hinzufügen, wenn die Tabelle leer ist
@@ -88,12 +92,13 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
 
 def main():
     # Streamlit App
-    # fuege_beispieldaten_hinzu()
+    fuege_beispieldaten_hinzu()
     
     if not check_password():
         st.stop()  # Do not continue if check_password is not True.
 
     st.title('Arbeitsplatz-Buchungstool')
+    
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
