@@ -4,7 +4,6 @@ import sqlite3
 from datetime import datetime, timedelta
 import hmac
 import json
-import os
 
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
@@ -88,9 +87,6 @@ def main():
         st.stop()  # Do not continue if check_password is not True.
 
     st.title('Arbeitsplatz-Buchungstool')
-     # Ermitteln des aktuellen Arbeitsverzeichnisses
-    aktuelles_verzeichnis = os.getcwd()
-    st.write("Das aktuelle Arbeitsverzeichnis ist:", aktuelles_verzeichnis)
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
