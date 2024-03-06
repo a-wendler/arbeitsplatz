@@ -3,6 +3,7 @@ import pandas as pd
 import sqlite3
 from datetime import datetime, timedelta
 import hmac
+import json
 
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
@@ -56,10 +57,17 @@ def fuege_beispieldaten_hinzu():
 
 def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     """Erstelle ein leeres Wochen-Dataframe und fülle es mit den vorhandenen Buchungen."""
+    # Einlesen der Arbeitsplätze-Konfiguration aus Datei plaetze.json
+    with open('plaetze.json', 'r') as f:
+        config = json.load(f)
+    plaetze = config['plaetze']
+
     # Erstellen des Datumsindex
     date_index = pd.date_range(start, ende)
+    
     # Erstellen des leeren Wochen-DataFrames
-    aktuelle_woche = pd.DataFrame(columns=[str(i) for i in range(1, 9)], index=date_index)
+    # aktuelle_woche = pd.DataFrame(columns=[str(i) for i in range(1, 9)], index=date_index)
+    aktuelle_woche = pd.DataFrame(columns=plaetze, index=date_index)
     aktuelle_woche.index.names = ['datum']
     aktuelle_woche.columns.names = ['platz']
     # die eingelesenen schon gespeicherten buchungen werden mit dem leeren wochen-df kombiniert
