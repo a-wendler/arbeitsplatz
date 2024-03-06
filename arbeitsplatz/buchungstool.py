@@ -4,6 +4,13 @@ import sqlite3
 from datetime import datetime, timedelta
 import hmac
 import json
+import os
+
+aktuelles_verzeichnis = os.getcwd()
+if aktuelles_verzeichnis.endswith("/arbeitsplatz/arbeitsplatz"):
+    verzeichnis_zusatz = "./"
+else:
+    verzeichnis_zusatz = "arbeitsplatz/"
 
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
@@ -58,7 +65,7 @@ def fuege_beispieldaten_hinzu():
 def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     """Erstelle ein leeres Wochen-Dataframe und fülle es mit den vorhandenen Buchungen."""
     # Einlesen der Arbeitsplätze-Konfiguration aus Datei plaetze.json
-    with open('plaetze.json', 'r') as f:
+    with open(f'{verzeichnis_zusatz}plaetze.json', 'r') as f:
         config = json.load(f)
     plaetze = config['plaetze']
 
@@ -87,6 +94,7 @@ def main():
         st.stop()  # Do not continue if check_password is not True.
 
     st.title('Arbeitsplatz-Buchungstool')
+    
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
@@ -122,7 +130,7 @@ def main():
         st.success('Buchungen erfolgreich gespeichert!')
     
     st.header('Arbeitsplatzübersicht')
-    st.image('arbeitsplatz/grundriss.png', use_column_width=True)
+    st.image(f'{verzeichnis_zusatz}grundriss.png', use_column_width=True)
 
 if __name__ == "__main__":
     # Datenbankverbindung herstellen
