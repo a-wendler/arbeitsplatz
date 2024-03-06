@@ -38,23 +38,6 @@ def check_password():
 def speichere_buchungen(df):
     """Speichere Buchungen in der Datenbank."""
     
-    # st.header("Spalten")
-    # df.columns
-    # st.session_state['mein_dataframe'].columns
-
-    # st.header("Index")
-    # df.index
-    # st.session_state['mein_dataframe'].index
-    # st.write("ENDE")
-
-    # Unterschiede finden
-    # diff_mask = st.session_state.mein_dataframe != df
-
-    # # Nur unterschiedliche Werte behalten
-    # diff_df = st.session_state.mein_dataframe.where(diff_mask, other=None)
-    # st.header("diff_df")
-    # diff_df
-
     c.execute('DELETE FROM buchungen WHERE datum BETWEEN ? AND ?', (df.index.min().strftime('%Y-%m-%d'), df.index.max().strftime('%Y-%m-%d')))
     for datum, row in df.iterrows():
         for platz, name in enumerate(row, start=1):
