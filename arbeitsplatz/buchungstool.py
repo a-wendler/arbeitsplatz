@@ -5,12 +5,7 @@ from datetime import datetime, timedelta
 import hmac
 import json
 import os
-
-aktuelles_verzeichnis = os.getcwd()
-if aktuelles_verzeichnis.endswith("/arbeitsplatz/arbeitsplatz"):
-    verzeichnis_zusatz = "./"
-else:
-    verzeichnis_zusatz = "arbeitsplatz/"
+import locale
 
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
@@ -81,6 +76,7 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     aktuelle_woche = pd.DataFrame(columns=plaetze, index=date_index)
     aktuelle_woche.index.names = ['datum']
     aktuelle_woche.columns.names = ['platz']
+    
     # die eingelesenen schon gespeicherten buchungen werden mit dem leeren wochen-df kombiniert
     # df = df.reset_index()
     # datenfilter = df.between(start, ende)
@@ -123,7 +119,7 @@ def main():
             wochen_df, column_config={
             "datum": st.column_config.DateColumn(
                 "Datum",
-                format="DD.MM.",
+                format="ddd, DD.MM.",
             ),
         }
         )
@@ -138,6 +134,17 @@ def main():
     st.image(f'{verzeichnis_zusatz}grundriss.png', use_column_width=True)
 
 if __name__ == "__main__":
+    # Locale auf Deutsch setzen, damit Wochentage in der Tabelle lokalisiert angezeigt werden
+    locale.setlocale(locale.LC_ALL, "de_DE")
+    st.write("locale: ", locale.getlocale())
+
+    # anpassung der pfade, jenachdem ob die app im testmodus lokal oder im deplayment bei streamlit läuft
+    aktuelles_verzeichnis = os.getcwd()
+    if aktuelles_verzeichnis.endswith("/arbeitsplatz/arbeitsplatz"):
+        verzeichnis_zusatz = "./"
+    else:
+        verzeichnis_zusatz = "arbeitsplatz/"
+
     # Datenbankverbindung herstellen
     conn = sqlite3.connect('buchungen.db')
     c = conn.cursor()
