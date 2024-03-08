@@ -135,7 +135,7 @@ def main():
 
 if __name__ == "__main__":
     # Locale auf Deutsch setzen, damit Wochentage in der Tabelle lokalisiert angezeigt werden
-    locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
+    locale.setlocale(locale.LC_ALL, "deu_deu")
     # st.write("locale: ", locale.getlocale())
 
     # anpassung der pfade, jenachdem ob die app im testmodus lokal oder im deplayment bei streamlit läuft
