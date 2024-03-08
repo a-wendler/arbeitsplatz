@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import hmac
 import json
 import os
-import locale
+# import locale
 
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
