@@ -89,7 +89,7 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
 
 def main():
     # Streamlit App
-    fuege_beispieldaten_hinzu()
+    # fuege_beispieldaten_hinzu()
     
     if not check_password():
         st.stop()  # Do not continue if check_password is not True.
