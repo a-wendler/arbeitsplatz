@@ -133,11 +133,11 @@ def main():
 # @st.cache_resource
 def init_connection():
     return mysql.connector.connect(
-        host=st.secrets("HOST"),
-        port=st.secrets("PORT"),
-        user=st.secrets("USER"),
-        password=st.secrets("SQL_PASSWORD"),
-        database=st.secrets("DATABASE")
+        host=st.secrets["HOST"],
+        port=st.secrets["PORT"],
+        user=st.secrets["USER"],
+        password=st.secrets["SQL_PASSWORD"],
+        database=st.secrets["DATABASE"]
     )
 
 if __name__ == "__main__":
