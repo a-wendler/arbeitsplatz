@@ -130,7 +130,6 @@ def main():
     st.header('Arbeitsplatzübersicht')
     st.image(f'{verzeichnis_zusatz}grundriss.png', use_column_width=True)
 
-# @st.cache_resource
 def init_connection():
     return mysql.connector.connect(
         host=st.secrets["HOST"],
