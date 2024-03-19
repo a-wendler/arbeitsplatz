@@ -11,6 +11,7 @@ streamlit = "^1.31.0"
 pandas = "^2.2.0"
 ipykernel = "^6.29.0"
 sqlalchemy = "^2.0.25"
+mysql-connector-python = "^8.3.0"
 
 
 [build-system]

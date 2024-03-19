@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 import hmac
 import json
 import os
-# import locale
+import mysql.connector
 
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
-    c.execute('SELECT * FROM buchungen WHERE datum BETWEEN ? AND ?', (start, ende))
+    c.execute('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', (start, ende))
     buchungen = pd.DataFrame(c.fetchall(), columns=['datum', 'platz', 'name'])
     buchungen['datum'] = pd.to_datetime(buchungen['datum'])
     return buchungen
@@ -41,25 +41,25 @@ def check_password():
 def speichere_buchungen(df):
     """Speichere Buchungen in der Datenbank."""
     
-    c.execute('DELETE FROM buchungen WHERE datum BETWEEN ? AND ?', (df.index.min().strftime('%Y-%m-%d'), df.index.max().strftime('%Y-%m-%d')))
+    c.execute('DELETE FROM buchungen WHERE datum BETWEEN %s AND %s', (df.index.min().strftime('%Y-%m-%d'), df.index.max().strftime('%Y-%m-%d')))
     for datum, row in df.iterrows():
         for platz in df.columns:
             name = row[platz]
             # Überprüfe, ob der Zelleninhalt nicht leer ist
             if pd.notnull(name):
                 # Füge den nicht-leeren Eintrag in die Datenbank ein
-                c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', 
+                c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (%s, %s, %s)', 
                           (datum.strftime('%Y-%m-%d'), platz, name))
     conn.commit()
 
 # Beispieldaten hinzufügen, wenn die Tabelle leer ist
-def fuege_beispieldaten_hinzu():
-    """Füge Beispieldaten hinzu, wenn die Tabelle leer ist."""
-    heute = datetime.today().date()
-    c.execute('SELECT * FROM buchungen WHERE datum = ?', (heute,))
-    if not c.fetchall():
-        c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (?, ?, ?)', (heute, '1', 'testuse'))
-        conn.commit()
+# def fuege_beispieldaten_hinzu():
+#     """Füge Beispieldaten hinzu, wenn die Tabelle leer ist."""
+#     heute = datetime.today().date()
+#     c.execute('SELECT * FROM buchungen WHERE datum = %s', (heute,))
+#     if not c.fetchall():
+#         c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (%s, %s, %s)', (heute, '1', 'testuse'))
+#         conn.commit()
 
 def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     """Erstelle ein leeres Wochen-Dataframe und fülle es mit den vorhandenen Buchungen."""
@@ -69,17 +69,14 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     plaetze = config['plaetze']
 
     # Erstellen des Datumsindex
-    date_index = pd.date_range(start, ende)
+    date_index = pd.date_range(start, ende, freq='B')
     
     # Erstellen des leeren Wochen-DataFrames
-    # aktuelle_woche = pd.DataFrame(columns=[str(i) for i in range(1, 9)], index=date_index)
     aktuelle_woche = pd.DataFrame(columns=plaetze, index=date_index)
     aktuelle_woche.index.names = ['datum']
     aktuelle_woche.columns.names = ['platz']
     
     # die eingelesenen schon gespeicherten buchungen werden mit dem leeren wochen-df kombiniert
-    # df = df.reset_index()
-    # datenfilter = df.between(start, ende)
     df = df.pivot(index='datum', columns='platz', values='name')
     df.columns.names = ['platz']
     aktuelle_woche = aktuelle_woche.combine_first(df)
@@ -89,7 +86,7 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
 
 def main():
     # Streamlit App
-    fuege_beispieldaten_hinzu()
+    # fuege_beispieldaten_hinzu()
     
     if not check_password():
         st.stop()  # Do not continue if check_password is not True.
@@ -100,9 +97,9 @@ def main():
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
     with col1:
-        start_datum = st.date_input('Startdatum', datetime.today(), format="DD.MM.YYYY", min_value=datetime.today()-timedelta(days=20), max_value=datetime.today() + timedelta(days=21))
+        start_datum = st.date_input('Startdatum', datetime.today(), format="DD.MM.YYYY", min_value=datetime.today()-timedelta(days=25), max_value=datetime.today() + timedelta(days=21))
     with col2:
-        ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7), format="DD.MM.YYYY", min_value=datetime.today()-timedelta(days=20), max_value=datetime.today() + timedelta(days=21))
+        ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7), format="DD.MM.YYYY", min_value=datetime.today()-timedelta(days=25), max_value=datetime.today() + timedelta(days=21))
     
     if start_datum > ende_datum:
         st.error('Das Startdatum darf nicht nach dem Enddatum liegen!')
@@ -133,11 +130,17 @@ def main():
     st.header('Arbeitsplatzübersicht')
     st.image(f'{verzeichnis_zusatz}grundriss.png', use_column_width=True)
 
-if __name__ == "__main__":
-    # Locale auf Deutsch setzen, damit Wochentage in der Tabelle lokalisiert angezeigt werden
-    # locale.setlocale(locale.LC_ALL, "de_DE.UTF-8")
-    # st.write("locale: ", locale.getlocale())
+# @st.cache_resource
+def init_connection():
+    return mysql.connector.connect(
+        host=st.secrets("HOST"),
+        port=st.secrets("PORT"),
+        user=st.secrets("USER"),
+        password=st.secrets("SQL_PASSWORD"),
+        database=st.secrets("DATABASE")
+    )
 
+if __name__ == "__main__":
     # anpassung der pfade, jenachdem ob die app im testmodus lokal oder im deplayment bei streamlit läuft
     aktuelles_verzeichnis = os.getcwd()
     if aktuelles_verzeichnis.endswith("/arbeitsplatz/arbeitsplatz"):
@@ -146,7 +149,7 @@ if __name__ == "__main__":
         verzeichnis_zusatz = "arbeitsplatz/"
 
     # Datenbankverbindung herstellen
-    conn = sqlite3.connect('buchungen.db')
+    conn = init_connection()
     c = conn.cursor()
 
     # Tabelle erstellen, falls sie noch nicht existiert
