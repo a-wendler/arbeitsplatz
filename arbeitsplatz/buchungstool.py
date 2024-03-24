@@ -7,6 +7,7 @@ import json
 import os
 import mysql.connector
 
+@st.cache_data
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
     c.execute('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', (start, ende))
@@ -37,7 +38,6 @@ def check_password():
         st.error("😕 Falsches Passwort")
     return False
 
-# Hilfsfunktion zum Speichern der Buchungen in der Datenbank
 def speichere_buchungen(df):
     """Speichere Buchungen in der Datenbank."""
     
@@ -61,6 +61,7 @@ def speichere_buchungen(df):
 #         c.execute('INSERT INTO buchungen (datum, platz, name) VALUES (%s, %s, %s)', (heute, '1', 'testuse'))
 #         conn.commit()
 
+@st.cache_data
 def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     """Erstelle ein leeres Wochen-Dataframe und fülle es mit den vorhandenen Buchungen."""
     # Einlesen der Arbeitsplätze-Konfiguration aus Datei plaetze.json
@@ -84,6 +85,16 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     aktuelle_woche.fillna('', inplace=True)
     return aktuelle_woche
 
+# @st.cache_resource
+def init_connection():
+    return mysql.connector.connect(
+        host=st.secrets["HOST"],
+        port=st.secrets["PORT"],
+        user=st.secrets["USER"],
+        password=st.secrets["SQL_PASSWORD"],
+        database=st.secrets["DATABASE"]
+    )
+
 def main():
     # Streamlit App
     # fuege_beispieldaten_hinzu()
@@ -92,6 +103,7 @@ def main():
         st.stop()  # Do not continue if check_password is not True.
 
     st.title('Arbeitsplatz-Buchungstool')
+    st.warning('Neuigkeiten in dieser Version: \n\n1. Speichern dauert länger. Die Daten werden jetzt in einer sicheren Datenbank gespeichert. Beim Klicken auf Änderungen Speichern kann es etwas längern dauern.\n\n2. Samstage und Sonntage sind im Kalender ausgeblendet.')
     st.warning('Neuigkeiten in dieser Version: \n\n1. Speichern dauert länger. Die Daten werden jetzt in einer sicheren Datenbank gespeichert. Beim Klicken auf Änderungen Speichern kann es etwas längern dauern.\n\n2. Samstage und Sonntage sind im Kalender ausgeblendet.')
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
@@ -130,15 +142,6 @@ def main():
     st.header('Arbeitsplatzübersicht')
     st.image(f'{verzeichnis_zusatz}grundriss.png', use_column_width=True)
 
-def init_connection():
-    return mysql.connector.connect(
-        host=st.secrets["HOST"],
-        port=st.secrets["PORT"],
-        user=st.secrets["USER"],
-        password=st.secrets["SQL_PASSWORD"],
-        database=st.secrets["DATABASE"]
-    )
-
 if __name__ == "__main__":
     # anpassung der pfade, jenachdem ob die app im testmodus lokal oder im deplayment bei streamlit läuft
     aktuelles_verzeichnis = os.getcwd()
@@ -162,4 +165,4 @@ if __name__ == "__main__":
     conn.commit()
     main()
     # Datenbankverbindung schließen
-    conn.close()
+    c.close()
