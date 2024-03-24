@@ -85,7 +85,7 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     aktuelle_woche.fillna('', inplace=True)
     return aktuelle_woche
 
-# @st.cache_resource
+@st.cache_resource
 def init_connection():
     return mysql.connector.connect(
         host=st.secrets["HOST"],
