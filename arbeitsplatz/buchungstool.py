@@ -6,6 +6,7 @@ import hmac
 import json
 import os
 import mysql.connector
+from sqlalchemy.sql import text
 
 @st.cache_data
 def lade_buchungen(start, ende):
@@ -156,13 +157,13 @@ if __name__ == "__main__":
     # c = conn.cursor()
     with conn.session as session:
     # Tabelle erstellen, falls sie noch nicht existiert
-        session.execute('''
+        session.execute(text('''
             CREATE TABLE IF NOT EXISTS buchungen (
                 datum DATE,
                 platz TEXT,
                 name TEXT
             )
-        ''')
+        '''))
         session.commit()
     main()
     # Datenbankverbindung schließen
