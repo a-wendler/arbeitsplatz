@@ -10,8 +10,9 @@ import mysql.connector
 @st.cache_data
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
-    c.execute('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', (start, ende))
-    buchungen = pd.DataFrame(c.fetchall(), columns=['datum', 'platz', 'name'])
+    #c.execute('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', (start, ende))
+    daten = conn.query('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', (start, ende))
+    buchungen = pd.DataFrame(daten, columns=['datum', 'platz', 'name'])
     buchungen['datum'] = pd.to_datetime(buchungen['datum'])
     return buchungen
 
@@ -152,17 +153,17 @@ if __name__ == "__main__":
     # Datenbankverbindung herstellen
         # conn = init_connection()
     conn = st.connection("sql")
-    c = conn.cursor()
-
+    # c = conn.cursor()
+    with conn.session as session:
     # Tabelle erstellen, falls sie noch nicht existiert
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS buchungen (
-            datum DATE,
-            platz TEXT,
-            name TEXT
-        )
-    ''')
-    conn.commit()
+        session.execute('''
+            CREATE TABLE IF NOT EXISTS buchungen (
+                datum DATE,
+                platz TEXT,
+                name TEXT
+            )
+        ''')
+        session.commit()
     main()
     # Datenbankverbindung schließen
     # c.close()
