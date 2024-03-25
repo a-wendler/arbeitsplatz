@@ -11,8 +11,8 @@ from sqlalchemy.sql import text
 @st.cache_data
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
-    #c.execute('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', (start, ende))
-    daten = conn.query('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', params=(start, ende))
+    #c.execute('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', (start,ende))
+    daten = conn.query('SELECT * FROM buchungen WHERE datum BETWEEN %s AND %s', params={"start":start,"ende":ende})
     buchungen = pd.DataFrame(daten, columns=['datum', 'platz', 'name'])
     buchungen['datum'] = pd.to_datetime(buchungen['datum'])
     return buchungen
