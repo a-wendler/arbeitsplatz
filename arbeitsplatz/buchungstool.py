@@ -85,7 +85,7 @@ def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
     aktuelle_woche.fillna('', inplace=True)
     return aktuelle_woche
 
-@st.cache_resource
+# @st.cache_resource
 def init_connection():
     return mysql.connector.connect(
         host=st.secrets["HOST"],
@@ -150,7 +150,8 @@ if __name__ == "__main__":
         verzeichnis_zusatz = "arbeitsplatz/"
 
     # Datenbankverbindung herstellen
-    conn = init_connection()
+        # conn = init_connection()
+    conn = st.connection("sql")
     c = conn.cursor()
 
     # Tabelle erstellen, falls sie noch nicht existiert
@@ -164,4 +165,4 @@ if __name__ == "__main__":
     conn.commit()
     main()
     # Datenbankverbindung schließen
-    c.close()
+    # c.close()
