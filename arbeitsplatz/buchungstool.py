@@ -126,13 +126,15 @@ def main():
         # Dataframe anzeigen und bearbeiten lassen
         st.header('2. Buchungen bearbeiten')
         data_editor = st.data_editor(
-            wochen_df, column_config={
+            wochen_df, key="dateneditor", column_config={
             "datum": st.column_config.DateColumn(
                 "Datum",
                 format="ddd, DD.MM.",
             ),
         }
         )
+        st.write(st.session_state['dateneditor'])
+
 
     st.header('3. Änderungen speichern')
     # Änderungen speichern
