@@ -44,15 +44,15 @@ def speichern_neu(df):
             datum = df.iloc[datumsindex].name
             for k,v in daten.items():
                 with conn.session as session:
-                    if len(v) > 0:
+                    if v and len(v) > 0:
                         session.execute(text("INSERT INTO buchungen (datum, platz, name) VALUES (:datum, :platz, :name) ON DUPLICATE KEY UPDATE name = :name;"), params={"datum": datum,"platz": k,"name": v})
-                    elif len(v) < 1:
+                    else:
                         session.execute(text("DELETE FROM buchungen WHERE datum = :datum AND platz = :platz;"), params={"datum": datum,"platz": k})
                     session.commit()
-    except:
-        st.toast("Beim Speichern der Daten ist ein Fehler aufgetreten. Bitte versuchen Sie es noch einmal.")
+    except Exception as e:
+        st.session_state.speicherstatus = e
     else:
-        st.toast('Buchungen erfolgreich gespeichert.')
+        st.session_state.speicherstatus = 'Änderungen erfolgreich gespeichert.'
 
 @st.cache_data
 def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
@@ -87,25 +87,16 @@ if __name__ == "__main__":
         verzeichnis_zusatz = "arbeitsplatz/"
 
     # Datenbankverbindung herstellen
-        # conn = init_connection()
     conn = st.connection("sql")
-    # c = conn.cursor()
-    with conn.session as session:
-    # Tabelle erstellen, falls sie noch nicht existiert
-        session.execute(text('''
-            CREATE TABLE IF NOT EXISTS buchungen (
-                datum DATE,
-                platz TEXT,
-                name TEXT
-            )
-        '''))
-        session.commit()
+    
     # Streamlit App
-    # fuege_beispieldaten_hinzu()
     
     if not check_password():
         st.stop()  # Do not continue if check_password is not True.
 
+    if "speicherstatus" not in st.session_state:
+        st.session_state.speicherstatus = ""
+    
     st.title('Arbeitsplatz-Buchungstool')
     st.error("DEV-UMGEBUNG")
     st.warning('Neuigkeiten in dieser Version: \n\n1. Speichern dauert länger. Die Daten werden jetzt in einer sicheren Datenbank gespeichert. Beim Klicken auf Änderungen Speichern kann es etwas längern dauern.\n\n2. Samstage und Sonntage sind im Kalender ausgeblendet.')
@@ -117,8 +108,6 @@ if __name__ == "__main__":
     with col2:
         ende_datum = st.date_input('Enddatum', datetime.today() + timedelta(days=7), format="DD.MM.YYYY", min_value=datetime.today()-timedelta(days=25), max_value=datetime.today() + timedelta(days=25))
     
-    speichermeldung = st.container()
-
     if start_datum > ende_datum:
         st.error('Das Startdatum darf nicht nach dem Enddatum liegen!')
     elif start_datum < ende_datum: 
@@ -138,11 +127,20 @@ if __name__ == "__main__":
         on_change=speichern_neu,
         args=(wochen_df,)
         )
-
+        speichermeldung = st.container()
+        with speichermeldung:
+            st.empty()
+            if type(st.session_state.speicherstatus) != str:
+                st.error("Etwas ist schiefgelaufen. Bitte laden Sie die Seite neu.")
+                st.error(st.session_state.speicherstatus)
+            elif len(st.session_state.speicherstatus) > 0:
+                st.success(st.session_state.speicherstatus)
+        
         st.info("Buchungen werden automatisch gespeichert, wenn Sie eine Änderung in einer Zelle vornehmen und in eine andere Zelle oder außerhalb der Tabelle klicken.")
     
   
     st.header('Arbeitsplatzübersicht')
     st.image(f'{verzeichnis_zusatz}grundriss.png', use_column_width=True)
-    # Datenbankverbindung schließen
-    # c.close()
+
+    with st.expander("Datenschutzhinweise"):
+        st.write('Die Daten werden auf einem Server beim Hostingdienstleister Hetzner in Nürnberg gespeichert. Es gilt die DSGVO. Zu dem Server hat ausschließlich André Wendler Zugang. Jede Nacht werden automatisch alle Buchungen, die älter als zwei Tage sind, gelöscht. Außerdem werden für jeweils 5 Tage Backups der Datenbank vorgehalten, um Datenverluste zurückspielen zu können. Sie können jederzeit den Inhalt der Datenbank und des Servers bei André Wendler einsehen. Der Code dieser App ist Open Source unter unter www.github.com/a-wendler/arbeitsplatz. Eine Analyse oder weitere Verwendung der Buchungsdaten ist ausgeschlossen.')
