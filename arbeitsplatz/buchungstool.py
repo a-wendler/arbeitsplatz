@@ -9,7 +9,7 @@ from sqlalchemy.sql import text
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
     with conn.session as session:
-        daten = session.execute(text('SELECT * FROM buchungen WHERE datum BETWEEN :start AND :ende;'), params={"start":start,"ende":ende})
+        daten = session.execute(text('SELECT * FROM buchungen_0_3_0 WHERE datum BETWEEN :start AND :ende;'), params={"start":start,"ende":ende})
         session.commit()
     buchungen = pd.DataFrame(daten, columns=['datum', 'platz', 'name'])
     buchungen['datum'] = pd.to_datetime(buchungen['datum'])
@@ -45,12 +45,12 @@ def speichern_neu(df):
             for k,v in daten.items():
                 with conn.session as session:
                     if v and len(v) > 0:
-                        session.execute(text("INSERT INTO buchungen (datum, platz, name) VALUES (:datum, :platz, :name) ON DUPLICATE KEY UPDATE name = :name;"), params={"datum": datum,"platz": k,"name": v})
+                        session.execute(text("INSERT INTO buchungen_0_3_0 (datum, platz, name) VALUES (:datum, :platz, :name) ON DUPLICATE KEY UPDATE name = :name;"), params={"datum": datum,"platz": k,"name": v})
                     else:
-                        session.execute(text("DELETE FROM buchungen WHERE datum = :datum AND platz = :platz;"), params={"datum": datum,"platz": k})
+                        session.execute(text("DELETE FROM buchungen_0_3_0 WHERE datum = :datum AND platz = :platz;"), params={"datum": datum,"platz": k})
                     session.commit()
     except Exception as e:
-        st.session_state.speicherstatus = e
+        st.session_state.speicherstatus = f"Fehler: {str(e)}"
     else:
         st.session_state.speicherstatus = 'Änderungen erfolgreich gespeichert.'
 
@@ -96,10 +96,12 @@ if __name__ == "__main__":
 
     if "speicherstatus" not in st.session_state:
         st.session_state.speicherstatus = ""
+    if len(st.session_state.speicherstatus) > 0:
+        st.success(st.session_state.speicherstatus) 
+        st.session_state.speicherstatus = ""
     
-    st.title('Arbeitsplatz-Buchungstool')
-    st.error("DEV-UMGEBUNG")
-    st.warning('Neuigkeiten in dieser Version: \n\n1. Speichern dauert länger. Die Daten werden jetzt in einer sicheren Datenbank gespeichert. Beim Klicken auf Änderungen Speichern kann es etwas längern dauern.\n\n2. Samstage und Sonntage sind im Kalender ausgeblendet.')
+    st.title('Arbeitsplatz-Buchungstool 0.3.0')
+    st.warning('Neuigkeiten in dieser Version: \n\n1. Automatisches Speichern: beim Verlassen einer Zelle in der Tabelle wird die neu eingetragene Buchung automatisch gespeichert. Ein Speichern-Button ist nicht notwendig. 2. Schnelleres Speicher: die Funktion zum Speichern wurde so überarbeitet, dass Buchungen schneller gespeichert werden.')
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
@@ -143,4 +145,4 @@ if __name__ == "__main__":
     st.image(f'{verzeichnis_zusatz}grundriss.png', use_column_width=True)
 
     with st.expander("Datenschutzhinweise"):
-        st.write('Die Daten werden auf einem Server beim Hostingdienstleister Hetzner in Nürnberg gespeichert. Es gilt die DSGVO. Zu dem Server hat ausschließlich André Wendler Zugang. Jede Nacht werden automatisch alle Buchungen, die älter als zwei Tage sind, gelöscht. Außerdem werden für jeweils 5 Tage Backups der Datenbank vorgehalten, um Datenverluste zurückspielen zu können. Sie können jederzeit den Inhalt der Datenbank und des Servers bei André Wendler einsehen. Der Code dieser App ist Open Source unter unter www.github.com/a-wendler/arbeitsplatz. Eine Analyse oder weitere Verwendung der Buchungsdaten ist ausgeschlossen.')
+        st.write('Die Daten werden auf einem Server beim Hostingdienstleister Hetzner in Nürnberg gespeichert. Es gilt die DSGVO. Zu dem Server hat ausschließlich André Wendler Zugang. Jede Nacht werden automatisch alle Buchungen, die älter als zwei Tage sind, gelöscht. Außerdem werden für jeweils 5 Tage Backups der Datenbank vorgehalten, um Datenverluste zurückspielen zu können. Sie können jederzeit den Inhalt der Datenbank und des Servers bei André Wendler einsehen. Der Code dieser App ist Open Source unter unter www.github.com/a-wendler/arbeitsplatz. Eine Analyse oder weitere Verwendung der Buchungsdaten ist ausgeschlossen. Das Programm selbst läuft beim Dienstleister Streamlit auf amerikanischen Servern. Der Dienstleister erhebt anonymisierte Nutzungsdaten.')
