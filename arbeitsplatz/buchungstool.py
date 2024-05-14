@@ -50,7 +50,7 @@ def speichern_neu(df):
                         session.execute(text("DELETE FROM buchungen_0_3_0 WHERE datum = :datum AND platz = :platz;"), params={"datum": datum,"platz": k})
                     session.commit()
     except Exception as e:
-        st.session_state.speicherstatus = f"Fehler: {str(e)}"
+        st.session_state.speicherstatus = e
     else:
         st.session_state.speicherstatus = 'Änderungen erfolgreich gespeichert.'
 
@@ -96,12 +96,10 @@ if __name__ == "__main__":
 
     if "speicherstatus" not in st.session_state:
         st.session_state.speicherstatus = ""
-    if len(st.session_state.speicherstatus) > 0:
-        st.success(st.session_state.speicherstatus) 
-        st.session_state.speicherstatus = ""
+    
     
     st.title('Arbeitsplatz-Buchungstool 0.3.0')
-    st.warning('Neuigkeiten in dieser Version: \n\n1. Automatisches Speichern: beim Verlassen einer Zelle in der Tabelle wird die neu eingetragene Buchung automatisch gespeichert. Ein Speichern-Button ist nicht notwendig. 2. Schnelleres Speicher: die Funktion zum Speichern wurde so überarbeitet, dass Buchungen schneller gespeichert werden.')
+    st.warning('Neuigkeiten in dieser Version: \n\n1. Automatisches Speichern: beim Verlassen einer Zelle in der Tabelle wird die neu eingetragene Buchung automatisch gespeichert. Ein Speichern-Button ist nicht notwendig. \n\n2. Schnelleres Speichern: die Funktion zum Speichern wurde so überarbeitet, dass Buchungen schneller gespeichert werden.')
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
