@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arbeitsplatz"
-version = "0.1.0"
+version = "0.3.0"
 description = ""
 authors = ["André Wendler <42637005+a-wendler@users.noreply.github.com>"]
 readme = "README.md"
