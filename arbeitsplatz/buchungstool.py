@@ -38,9 +38,9 @@ def check_password():
         st.error("😕 Falsches Passwort")
     return False
 
-def speichern_neu(df):
+def speichern_neu(df, scope):
     try:
-        for datumsindex, daten in st.session_state['dateneditor']['edited_rows'].items():
+        for datumsindex, daten in st.session_state[scope]['edited_rows'].items():
             datum = df.iloc[datumsindex].name
             for k,v in daten.items():
                 with conn.session as session:
@@ -55,12 +55,12 @@ def speichern_neu(df):
         st.session_state.speicherstatus = 'Änderungen erfolgreich gespeichert.'
 
 @st.cache_data
-def wochenansicht(df: pd.DataFrame, start, ende) -> pd.DataFrame:
+def wochenansicht(df: pd.DataFrame, start, ende, scope) -> pd.DataFrame:
     """Erstelle ein leeres Wochen-Dataframe und fülle es mit den vorhandenen Buchungen."""
     # Einlesen der Arbeitsplätze-Konfiguration aus Datei plaetze.json
     with open(f'{verzeichnis_zusatz}plaetze.json', 'r') as f:
         config = json.load(f)
-    plaetze = config['plaetze']
+    plaetze = config[scope]
 
     # Erstellen des Datumsindex
     date_index = pd.date_range(start, ende, freq='B')
@@ -98,8 +98,8 @@ if __name__ == "__main__":
         st.session_state.speicherstatus = ""
     
     
-    st.title('Arbeitsplatz-Buchungstool 0.3.0')
-    st.warning('Neuigkeiten in dieser Version: \n\n1. Automatisches Speichern: beim Verlassen einer Zelle in der Tabelle wird die neu eingetragene Buchung automatisch gespeichert. Ein Speichern-Button ist nicht notwendig. \n\n2. Schnelleres Speichern: die Funktion zum Speichern wurde so überarbeitet, dass Buchungen schneller gespeichert werden.')
+    st.title('Arbeitsplatz-Buchungstool 0.4.0')
+    # st.warning('Neuigkeiten in dieser Version: \n\n1. Automatisches Speichern: beim Verlassen einer Zelle in der Tabelle wird die neu eingetragene Buchung automatisch gespeichert. Ein Speichern-Button ist nicht notwendig. \n\n2. Schnelleres Speichern: die Funktion zum Speichern wurde so überarbeitet, dass Buchungen schneller gespeichert werden.')
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
     col1, col2 = st.columns(2)
@@ -111,22 +111,28 @@ if __name__ == "__main__":
     if start_datum > ende_datum:
         st.error('Das Startdatum darf nicht nach dem Enddatum liegen!')
     elif start_datum < ende_datum: 
-        # Buchungen für den gewählten Zeitraum laden
-        buchungen_df = lade_buchungen(start_datum, ende_datum)
-        wochen_df = wochenansicht(buchungen_df, start_datum, ende_datum)
-
-        # Dataframe anzeigen und bearbeiten lassen
+        scopes = ["plaetze","havarie"]
         st.header('2. Buchungen bearbeiten')
-        data_editor = st.data_editor(
-            wochen_df, key="dateneditor", column_config={
-            "datum": st.column_config.DateColumn(
-                "Datum",
-                format="ddd, DD.MM.",
-            ),
-        },
-        on_change=speichern_neu,
-        args=(wochen_df,)
-        )
+        for scope in scopes:
+            # Buchungen für den gewählten Zeitraum laden
+            buchungen_df = lade_buchungen(start_datum, ende_datum)
+            wochen_df = wochenansicht(buchungen_df, start_datum, ende_datum, scope)
+
+            # Dataframe anzeigen und bearbeiten lassen
+            if scope == "plaetze":
+                st.subheader("Grüner Salon")
+            if scope == "havarie":
+                st.subheader("Havarieplätze")
+            data_editor = st.data_editor(
+                wochen_df, key=scope, column_config={
+                "datum": st.column_config.DateColumn(
+                    "Datum",
+                    format="ddd, DD.MM.",
+                ),
+            },
+            on_change=speichern_neu,
+            args=(wochen_df, scope)
+            )
         speichermeldung = st.container()
         with speichermeldung:
             st.empty()
