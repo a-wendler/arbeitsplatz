@@ -13,10 +13,13 @@
     ],
     "havarie":[
         "U.17_Azubi",
+        "U.17_Langhammer",
         "U.20_Azubi",
+        "U.20_Baecke",
+        "U.25",
+        "U.27",
         "1.20_Azubi",
-        "E.21_Hannich",
-        "E.21_Rodig",
-        "E.23_Burkhardt"
+        "E.21",
+        "1.26"
     ]
 }
