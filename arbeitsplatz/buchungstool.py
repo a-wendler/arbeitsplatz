@@ -111,7 +111,7 @@ if __name__ == "__main__":
     if start_datum > ende_datum:
         st.error('Das Startdatum darf nicht nach dem Enddatum liegen!')
     elif start_datum < ende_datum: 
-        scopes = ["plaetze","havarie"]
+        scopes = ["plaetze"]
         st.header('2. Buchungen bearbeiten')
         for scope in scopes:
             # Buchungen für den gewählten Zeitraum laden
