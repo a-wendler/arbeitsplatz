@@ -98,7 +98,7 @@ if __name__ == "__main__":
         st.session_state.speicherstatus = ""
     
     
-    st.title('Arbeitsplatz-Buchungstool 0.4.0')
+    st.title('Arbeitsplatz-Buchungstool 0.5.0')
     # st.warning('Neuigkeiten in dieser Version: \n\n1. Automatisches Speichern: beim Verlassen einer Zelle in der Tabelle wird die neu eingetragene Buchung automatisch gespeichert. Ein Speichern-Button ist nicht notwendig. \n\n2. Schnelleres Speichern: die Funktion zum Speichern wurde so überarbeitet, dass Buchungen schneller gespeichert werden.')
     # Kalenderwidget zur Auswahl des Zeitraums
     st.header('1. Datumsbereich wählen')
@@ -111,7 +111,7 @@ if __name__ == "__main__":
     if start_datum > ende_datum:
         st.error('Das Startdatum darf nicht nach dem Enddatum liegen!')
     elif start_datum < ende_datum: 
-        scopes = ["plaetze"]
+        scopes = ["plaetze", "sonstige"]
         st.header('2. Buchungen bearbeiten')
         for scope in scopes:
             # Buchungen für den gewählten Zeitraum laden
@@ -121,8 +121,9 @@ if __name__ == "__main__":
             # Dataframe anzeigen und bearbeiten lassen
             if scope == "plaetze":
                 st.subheader("Grüner Salon")
-            if scope == "havarie":
-                st.subheader("Havarieplätze")
+            if scope == "sonstige":
+                st.subheader("Sonstige Arbeitsplätze")
+                st.markdown("Diese Arbeitsplätze können nur an Tagen gebucht werden, an denen »frei« von den jeweiligen Inhaberinnen des Arbeitsplatzes eingetragen wurde.")
             data_editor = st.data_editor(
                 wochen_df, key=scope, column_config={
                 "datum": st.column_config.DateColumn(
@@ -146,7 +147,7 @@ if __name__ == "__main__":
     
   
     st.header('Arbeitsplatzübersicht')
-    st.image(f'{verzeichnis_zusatz}grundriss.png', use_column_width=True)
+    st.image(f'{verzeichnis_zusatz}grundriss.png', use_container_width=True)
 
     with st.expander("Datenschutzhinweise"):
         st.write('Die Daten werden auf einem Server beim Hostingdienstleister Hetzner in Nürnberg gespeichert. Es gilt die DSGVO. Zu dem Server hat ausschließlich André Wendler Zugang. Jede Nacht werden automatisch alle Buchungen, die älter als zwei Tage sind, gelöscht. Außerdem werden für jeweils 5 Tage Backups der Datenbank vorgehalten, um Datenverluste zurückspielen zu können. Sie können jederzeit den Inhalt der Datenbank und des Servers bei André Wendler einsehen. Der Code dieser App ist Open Source unter unter www.github.com/a-wendler/arbeitsplatz. Eine Analyse oder weitere Verwendung der Buchungsdaten ist ausgeschlossen. Das Programm selbst läuft beim Dienstleister Streamlit auf amerikanischen Servern. Der Dienstleister erhebt anonymisierte Nutzungsdaten.')
