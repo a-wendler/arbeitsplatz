@@ -123,7 +123,7 @@ if __name__ == "__main__":
                 st.subheader("Grüner Salon")
             if scope == "sonstige":
                 st.subheader("Sonstige Arbeitsplätze")
-                st.markdown("Diese Arbeitsplätze können nur an Tagen gebucht werden, an denen »frei« von den jeweiligen Inhaberinnen des Arbeitsplatzes eingetragen wurde.")
+                st.markdown("Diese Arbeitsplätze können __nur an Tagen gebucht__ werden, an denen __»frei«__ von den jeweiligen Inhaberinnen des Arbeitsplatzes eingetragen wurde.")
             data_editor = st.data_editor(
                 wochen_df, key=scope, column_config={
                 "datum": st.column_config.DateColumn(
