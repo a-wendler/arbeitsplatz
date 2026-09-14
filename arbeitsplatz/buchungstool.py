@@ -6,14 +6,25 @@ import json
 import os
 from sqlalchemy.sql import text
 
+# Wie lange geladene Buchungen wiederverwendet werden, bevor erneut die
+# Datenbank befragt wird. Nach jedem Speichern wird der Cache gezielt geleert,
+# damit eigene Änderungen sofort sichtbar sind.
+BUCHUNGEN_TTL = 10
+
+@st.cache_data(ttl=BUCHUNGEN_TTL, show_spinner=False)
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
     with conn.session as session:
-        daten = session.execute(text('SELECT * FROM buchungen_0_3_0 WHERE datum BETWEEN :start AND :ende;'), params={"start":start,"ende":ende})
-        session.commit()
+        daten = session.execute(text('SELECT datum, platz, name FROM buchungen_0_3_0 WHERE datum BETWEEN :start AND :ende;'), params={"start":start,"ende":ende}).fetchall()
     buchungen = pd.DataFrame(daten, columns=['datum', 'platz', 'name'])
     buchungen['datum'] = pd.to_datetime(buchungen['datum'])
     return buchungen
+
+@st.cache_data(show_spinner=False)
+def lade_plaetze(pfad):
+    """Lies die Arbeitsplätze-Konfiguration aus Datei plaetze.json."""
+    with open(pfad, 'r') as f:
+        return json.load(f)
 
 def check_password():
     """Returns `True` if the user had the correct password."""
@@ -39,28 +50,29 @@ def check_password():
     return False
 
 def speichern_neu(df, scope):
+    """Schreibe alle geänderten Zellen des Editors in einer Transaktion."""
     try:
-        for datumsindex, daten in st.session_state[scope]['edited_rows'].items():
-            datum = df.iloc[datumsindex].name
-            for k,v in daten.items():
-                with conn.session as session:
+        with conn.session as session:
+            for datumsindex, daten in st.session_state[scope]['edited_rows'].items():
+                datum = df.iloc[datumsindex].name
+                for k,v in daten.items():
                     if v and len(v) > 0:
                         session.execute(text("INSERT INTO buchungen_0_3_0 (datum, platz, name) VALUES (:datum, :platz, :name) ON DUPLICATE KEY UPDATE name = :name;"), params={"datum": datum,"platz": k,"name": v})
                     else:
                         session.execute(text("DELETE FROM buchungen_0_3_0 WHERE datum = :datum AND platz = :platz;"), params={"datum": datum,"platz": k})
-                    session.commit()
+            session.commit()
     except Exception as e:
+        # Details nur ins Server-Log, damit Nutzerinnen keine Datenbankinterna sehen.
+        print(f"Fehler beim Speichern ({scope}): {e}", flush=True)
         st.session_state.speicherstatus = e
     else:
+        # Cache leeren, damit die frisch gespeicherten Werte sofort geladen werden.
+        lade_buchungen.clear()
         st.session_state.speicherstatus = 'Änderungen erfolgreich gespeichert.'
 
-@st.cache_data
 def wochenansicht(df: pd.DataFrame, start, ende, scope) -> pd.DataFrame:
     """Erstelle ein leeres Wochen-Dataframe und fülle es mit den vorhandenen Buchungen."""
-    # Einlesen der Arbeitsplätze-Konfiguration aus Datei plaetze.json
-    with open(f'{verzeichnis_zusatz}plaetze.json', 'r') as f:
-        config = json.load(f)
-    plaetze = config[scope]
+    plaetze = lade_plaetze(f'{verzeichnis_zusatz}plaetze.json')[scope]
 
     # Erstellen des Datumsindex
     date_index = pd.date_range(start, ende, freq='B')
@@ -110,12 +122,12 @@ if __name__ == "__main__":
     
     if start_datum > ende_datum:
         st.error('Das Startdatum darf nicht nach dem Enddatum liegen!')
-    elif start_datum < ende_datum: 
+    else:
         scopes = ["plaetze", "sonstige"]
         st.header('2. Buchungen bearbeiten')
+        # Beide Tabellen zeigen denselben Zeitraum, daher nur einmal laden.
+        buchungen_df = lade_buchungen(start_datum, ende_datum)
         for scope in scopes:
-            # Buchungen für den gewählten Zeitraum laden
-            buchungen_df = lade_buchungen(start_datum, ende_datum)
             wochen_df = wochenansicht(buchungen_df, start_datum, ende_datum, scope)
 
             # Dataframe anzeigen und bearbeiten lassen
@@ -137,9 +149,8 @@ if __name__ == "__main__":
         speichermeldung = st.container()
         with speichermeldung:
             st.empty()
-            if type(st.session_state.speicherstatus) != str:
+            if not isinstance(st.session_state.speicherstatus, str):
                 st.error("Etwas ist schiefgelaufen. Bitte laden Sie die Seite neu.")
-                st.error(st.session_state.speicherstatus)
             elif len(st.session_state.speicherstatus) > 0:
                 st.success(st.session_state.speicherstatus)
         
