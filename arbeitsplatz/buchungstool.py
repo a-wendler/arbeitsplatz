@@ -147,7 +147,7 @@ if __name__ == "__main__":
     
   
     st.header('Arbeitsplatzübersicht')
-    st.image(f'{verzeichnis_zusatz}grundriss.png', use_container_width=True)
+    st.image(f'{verzeichnis_zusatz}grundriss.png', width="stretch")
 
     with st.expander("Datenschutzhinweise"):
         st.write('Die Daten werden auf einem Server beim Hostingdienstleister Hetzner in Nürnberg gespeichert. Es gilt die DSGVO. Zu dem Server hat ausschließlich André Wendler Zugang. Jede Nacht werden automatisch alle Buchungen, die älter als zwei Tage sind, gelöscht. Außerdem werden für jeweils 5 Tage Backups der Datenbank vorgehalten, um Datenverluste zurückspielen zu können. Sie können jederzeit den Inhalt der Datenbank und des Servers bei André Wendler einsehen. Der Code dieser App ist Open Source unter unter www.github.com/a-wendler/arbeitsplatz. Eine Analyse oder weitere Verwendung der Buchungsdaten ist ausgeschlossen. Das Programm selbst läuft beim Dienstleister Streamlit auf amerikanischen Servern. Der Dienstleister erhebt anonymisierte Nutzungsdaten.')
