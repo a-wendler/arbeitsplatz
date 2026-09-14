@@ -4,18 +4,32 @@ from datetime import datetime, timedelta
 import hmac
 import json
 import os
-from sqlalchemy.sql import text
+from sqlalchemy import Date, String, delete, select
+from sqlalchemy.dialects.mysql import insert
+from sqlalchemy.orm import DeclarativeBase, mapped_column
 
 # Wie lange geladene Buchungen wiederverwendet werden, bevor erneut die
 # Datenbank befragt wird. Nach jedem Speichern wird der Cache gezielt geleert,
 # damit eigene Änderungen sofort sichtbar sind.
 BUCHUNGEN_TTL = 10
 
+class Base(DeclarativeBase):
+    pass
+
+class Buchung(Base):
+    """Eine Buchung. Tabellen- und Spaltennamen stehen nur hier."""
+    __tablename__ = 'buchungen_0_3_0'
+
+    datum = mapped_column(Date, primary_key=True)
+    platz = mapped_column(String(20), primary_key=True)
+    name = mapped_column(String(100))
+
 @st.cache_data(ttl=BUCHUNGEN_TTL, show_spinner=False)
 def lade_buchungen(start, ende):
     """Lade Buchungen aus der Datenbank für den gewählten Zeitraum."""
+    abfrage = select(Buchung.datum, Buchung.platz, Buchung.name).where(Buchung.datum.between(start, ende))
     with conn.session as session:
-        daten = session.execute(text('SELECT datum, platz, name FROM buchungen_0_3_0 WHERE datum BETWEEN :start AND :ende;'), params={"start":start,"ende":ende}).fetchall()
+        daten = session.execute(abfrage).fetchall()
     buchungen = pd.DataFrame(daten, columns=['datum', 'platz', 'name'])
     buchungen['datum'] = pd.to_datetime(buchungen['datum'])
     return buchungen
@@ -57,9 +71,12 @@ def speichern_neu(df, scope):
                 datum = df.iloc[datumsindex].name
                 for k,v in daten.items():
                     if v and len(v) > 0:
-                        session.execute(text("INSERT INTO buchungen_0_3_0 (datum, platz, name) VALUES (:datum, :platz, :name) ON DUPLICATE KEY UPDATE name = :name;"), params={"datum": datum,"platz": k,"name": v})
+                        # Buchung anlegen, bei belegtem Platz den Namen überschreiben.
+                        eintrag = insert(Buchung).values(datum=datum, platz=k, name=v)
+                        session.execute(eintrag.on_duplicate_key_update(name=eintrag.inserted.name))
                     else:
-                        session.execute(text("DELETE FROM buchungen_0_3_0 WHERE datum = :datum AND platz = :platz;"), params={"datum": datum,"platz": k})
+                        # Leere Zelle bedeutet: Buchung entfernen.
+                        session.execute(delete(Buchung).where(Buchung.datum == datum, Buchung.platz == k))
             session.commit()
     except Exception as e:
         # Details nur ins Server-Log, damit Nutzerinnen keine Datenbankinterna sehen.
