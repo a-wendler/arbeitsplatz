@@ -5,6 +5,25 @@ description = ""
 authors = ["André Wendler <42637005+a-wendler@users.noreply.github.com>"]
 readme = "README.md"
 
+[project]
+name = "arbeitsplatz"
+version = "0.3.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.11,<4.0"
+authors = [
+	{ name = "André Wendler", email = "42637005+a-wendler@users.noreply.github.com" },
+]
+dependencies = [
+	"streamlit==1.63.0",
+	"pandas>=2.2.2,<3.0.0",
+	"ipykernel>=6.29.4,<7.0.0",
+	"sqlalchemy>=2.0.30,<3.0.0",
+	"mysql-connector-python>=8.4.0,<9.0.0",
+	"pymysql>=1.1.1,<2.0.0",
+	"cryptography>=43.0.0,<44.0.0",
+]
+
 [tool.poetry.dependencies]
 python = "^3.11"
 streamlit = "1.63.0"
