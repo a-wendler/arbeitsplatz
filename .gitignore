@@ -1,7 +1,6 @@
 buchungen.csv
 secrets.toml
 buchungen.db
-poetry.lock
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
